@@ -6,7 +6,7 @@ def snap(number_of_frames):
 
     for i in range(number_of_frames):
         ret, frame = cap.read()
-        cv2.imwrite('out-%s.png' % str(i), frame)
+        cv2.imwrite('./images/out-%s.png' % str(i), frame)
 
     cap.release()
     cv2.destroyAllWindows()
