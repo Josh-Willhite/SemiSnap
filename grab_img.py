@@ -15,8 +15,10 @@ def snap(number_of_frames):
         cv2.putText(frame, str(time.time()), (width/2, height/2), cv2.FONT_HERSHEY_PLAIN, 1.0, text_color)
         frame_buffer.append(frame)
 
+    count = 0
     for f in frame_buffer:
-        cv2.imwrite('./images/out-%s.png' % str(i), f)
+        cv2.imwrite('./images/out-%s.png' % str(count), f)
+        count += count
 
     cap.release()
     cv2.destroyAllWindows()
