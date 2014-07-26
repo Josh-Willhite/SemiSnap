@@ -3,6 +3,7 @@ from scipy import stats
 import cv2
 import subprocess
 import time
+from time import strftime
 from collections import deque
 
 
@@ -38,7 +39,7 @@ def getROI(frame):
     return frame[y0:y1, x0:x1]
 
 
-def snap(number_of_frames):
+def snap():
     cap = cv2.VideoCapture(1)
     raw = cv2.cvtColor(cap.read()[1], cv2.COLOR_BGR2GRAY)
     a = raw
@@ -59,8 +60,12 @@ def snap(number_of_frames):
         curr_threshold = curr_mode + trigger_level * curr_mode
 
 
-        if d > curr_threshold and len(thresh_q) > 100 and (curr_time - last_time) > .5:
+        if d > curr_threshold and len(thresh_q) > 10 and (curr_time - last_time) > .5:
+            width = np.size(raw, 1)
+            height = np.size(raw, 0)
             last_time = curr_time
+            text_color = (0, 0, 0)
+            cv2.putText(raw, strftime("%a, %d %b %Y %H:%M:%S"), (0, 20), cv2.FONT_HERSHEY_PLAIN, 1.5, text_color)
             cv2.imshow('movement', raw)
             print "TIME: " + str(last_time)
             print "FRAME MEAN: " + str(d)
@@ -81,12 +86,5 @@ def snap(number_of_frames):
     '''
 
 
-
-
-
-def main():
-    snap(10)
-
-
 if __name__ == '__main__':
-    main()
+    snap()
