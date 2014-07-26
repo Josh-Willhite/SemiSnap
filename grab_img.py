@@ -1,55 +1,63 @@
 import numpy as np
+from scipy import stats
 import cv2
-import time
 import subprocess
+from collections import deque
 
-threshold = .4
+#TODO buffer last 10? frames and select the frame with the highest mean value
+
+thresh_q = deque(maxlen=1000)
 
 def alarm():
     subprocess.call(["beep"])
 
 
+def get_threshold():
+    mean_list = [val for val in thresh_q]
+    return stats.mode(mean_list)
+
+
 def diff(c, b, a):
     d1 = cv2.absdiff(a, b)
     d2 = cv2.absdiff(b, c)
-    sum = cv2.bitwise_and(d1, d2)
-    return sum
+    background_removed = cv2.bitwise_and(d1, d2)
+    return background_removed, cv2.mean(background_removed)
 
 
 def getROI(frame):
-    x0 = 100
-    y0 = 100
-    x1 = 500
-    y1 = 500
+    width = np.size(frame, 1)
+    height = np.size(frame, 0)
+
+    #select upper portion of frame
+    x0 = 0
+    y0 = 0
+    x1 = width
+    y1 = height/2
+
     return frame[y0:y1, x0:x1]
 
 
 def snap(number_of_frames):
     cap = cv2.VideoCapture(1)
+    raw = cv2.cvtColor(cap.read()[1], cv2.COLOR_BGR2GRAY)
+    a = getROI(raw)
+    b = getROI(raw)
+    #c = getROI(raw)
+    #frame_buffer = []
 
-    a = cv2.cvtColor(cap.read()[1], cv2.COLOR_BGR2GRAY)
-    b = cv2.cvtColor(cap.read()[1], cv2.COLOR_BGR2GRAY)
-    c = cv2.cvtColor(cap.read()[1], cv2.COLOR_BGR2GRAY)
-    frame_buffer = []
-
-    while(True):
-    #for i in range(number_of_frames):
-        #ret, frame = cap.read()
-
+    while True:
+        raw = cv2.cvtColor(cap.read()[1], cv2.COLOR_BGR2GRAY)
         c = b
         b = a
-        a = cv2.cvtColor(cap.read()[1], cv2.COLOR_BGR2GRAY)
+        a = getROI(raw)
 
-        #width = np.size(frame, 0)
-        #height = np.size(frame, 1)
-        #text_color = (0,0,255)
-        #cv2.putText(frame, str(time.time()), (width/2, height/2), cv2.FONT_HERSHEY_PLAIN, 1.0, text_color)
-        #cv2.imshow('frame', a)
         d = diff(c,b,a)
-        cv2.imshow('diff', d)
-        cv2.imshow('roi', getROI(a))
-        if cv2.mean(d)[0] > threshold:
-            cv2.imshow('movement', a)
+
+        thresh_q.append(round(d[1][0], 2))
+
+        cv2.imshow('ROI', a)
+        if d[1][0] > get_threshold()[0][0] + .15 * get_threshold()[0][0]:
+            cv2.imshow('movement', raw)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
         #frame_buffer.append(frame)
