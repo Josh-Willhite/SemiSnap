@@ -2,11 +2,12 @@ import numpy as np
 from scipy import stats
 import cv2
 import subprocess
+import time
 from collections import deque
 
-#TODO buffer last 10? frames and select the frame with the highest mean value
 
-thresh_q = deque(maxlen=1000)
+thresh_q = deque(maxlen=200)
+trigger_level = .25
 
 def alarm():
     subprocess.call(["beep"])
@@ -14,7 +15,7 @@ def alarm():
 
 def get_threshold():
     mean_list = [val for val in thresh_q]
-    return stats.mode(mean_list)
+    return stats.mode(mean_list)[0][0]
 
 
 def diff(c, b, a):
@@ -40,24 +41,30 @@ def getROI(frame):
 def snap(number_of_frames):
     cap = cv2.VideoCapture(1)
     raw = cv2.cvtColor(cap.read()[1], cv2.COLOR_BGR2GRAY)
-    a = getROI(raw)
-    b = getROI(raw)
-    #c = getROI(raw)
-    #frame_buffer = []
+    a = raw
+    b = raw
+    last_time = time.time()
 
     while True:
+        curr_time = time.time()
         raw = cv2.cvtColor(cap.read()[1], cv2.COLOR_BGR2GRAY)
         c = b
         b = a
-        a = getROI(raw)
+        a = raw
 
-        d = diff(c,b,a)
+        d = diff(c,b,a)[1][0]
 
-        thresh_q.append(round(d[1][0], 2))
+        thresh_q.append(round(d, 2))
+        curr_mode = get_threshold()
+        curr_threshold = curr_mode + trigger_level * curr_mode
 
-        cv2.imshow('ROI', a)
-        if d[1][0] > get_threshold()[0][0] + .15 * get_threshold()[0][0]:
+
+        if d > curr_threshold and len(thresh_q) > 100 and (curr_time - last_time) > .5:
+            last_time = curr_time
             cv2.imshow('movement', raw)
+            print "TIME: " + str(last_time)
+            print "FRAME MEAN: " + str(d)
+            print "Current Threshold: "  + str(curr_threshold)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
         #frame_buffer.append(frame)
