@@ -4,11 +4,15 @@ import cv2
 import subprocess
 import time
 from time import strftime
+from Queue import Queue
 from collections import deque
+import threading
 
 
 thresh_q = deque(maxlen=500)
 trigger_level = .25
+
+img_write_q = Queue()
 
 def alarm():
     subprocess.call(["beep"])
@@ -40,6 +44,7 @@ def getROI(frame):
 
 
 def snap():
+    print "waiting to detect vehicle"
     cap = cv2.VideoCapture(0)
     raw = cv2.cvtColor(cap.read()[1], cv2.COLOR_BGR2GRAY)
     a = raw
@@ -67,6 +72,7 @@ def snap():
             text_color = (0, 0, 0)
             cv2.putText(raw, strftime("%a, %d %b %Y %H:%M:%S"), (0, 20), cv2.FONT_HERSHEY_PLAIN, 1.5, text_color)
             cv2.imshow('movement', raw)
+            img_write_q.put(raw)
             print "TIME: " + str(last_time)
             print "FRAME MEAN: " + str(d)
             print "Current Threshold: "  + str(curr_threshold)
@@ -76,15 +82,18 @@ def snap():
 
     cap.release()
     cv2.destroyAllWindows()
-    '''
-    #write images to disk
-    count = 0
-    for f in frame_buffer:
-        print count
-        cv2.imwrite('./images/out-%s.png' % str(count), f)
-        count += 1
-    '''
+
+def write_img():
+    print "waiting to write images"
+    while True:
+        if not img_write_q.empty():
+            frame = img_write_q.get()
+            cv2.imwrite('./images/%s.png' % time.time(), frame)
 
 
 if __name__ == '__main__':
-    snap()
+    cv_thread = threading.Thread(target=snap)
+    cv_thread.start()
+
+    write_thread = threading.Thread(target=write_img)
+    write_thread.start()
