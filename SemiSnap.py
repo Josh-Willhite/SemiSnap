@@ -7,7 +7,7 @@ from time import strftime
 from collections import deque
 
 
-thresh_q = deque(maxlen=200)
+thresh_q = deque(maxlen=500)
 trigger_level = .25
 
 def alarm():
@@ -40,7 +40,7 @@ def getROI(frame):
 
 
 def snap():
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     raw = cv2.cvtColor(cap.read()[1], cv2.COLOR_BGR2GRAY)
     a = raw
     b = raw
@@ -60,7 +60,7 @@ def snap():
         curr_threshold = curr_mode + trigger_level * curr_mode
 
 
-        if d > curr_threshold and len(thresh_q) > 10 and (curr_time - last_time) > .5:
+        if d > curr_threshold and len(thresh_q) > 50 and (curr_time - last_time) > .5:
             width = np.size(raw, 1)
             height = np.size(raw, 0)
             last_time = curr_time
