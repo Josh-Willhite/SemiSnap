@@ -1,3 +1,12 @@
+'''
+Created on July 27, 2014
+
+[Copyright (c) 2014 Josh Willhite]
+Repository: https://github.com/Josh-Willhite/SemiSnap Email: jwillhite@gmail.com
+
+This program is released under the MIT license. See the COPYING file for terms.
+'''
+
 import twitter
 import json
 from time import strftime

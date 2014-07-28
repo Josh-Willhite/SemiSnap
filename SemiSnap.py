@@ -1,3 +1,12 @@
+'''
+Created on July 27, 2014
+
+[Copyright (c) 2014 Josh Willhite]
+Repository: https://github.com/Josh-Willhite/SemiSnap Email: jwillhite@gmail.com
+
+This program is released under the MIT license. See the COPYING file for terms.
+'''
+
 import numpy as np
 from scipy import stats
 import cv2
@@ -15,9 +24,6 @@ trigger_level = .25
 min_img_cap_time = 1.5
 
 img_write_q = Queue()
-
-def alarm():
-    subprocess.call(["beep"])
 
 
 def get_threshold():
@@ -46,7 +52,6 @@ def getROI(frame):
 
 
 def snap():
-    print "waiting to detect vehicle"
     cap = cv2.VideoCapture(0)
     raw = cv2.cvtColor(cap.read()[1], cv2.COLOR_BGR2GRAY)
     a = raw
@@ -74,18 +79,14 @@ def snap():
             text_color = (0, 0, 0)
             cv2.putText(raw, strftime("%a, %d %b %Y %H:%M:%S"), (0, 20), cv2.FONT_HERSHEY_PLAIN, 1.5, text_color)
             cv2.imshow('movement', raw)
-            img_write_q.put(raw)
-            #print "TIME: " + str(last_time)
-            #print "FRAME MEAN: " + str(d)
-            #print "Current Threshold: "  + str(curr_threshold)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+            #img_write_q.put(raw)
+        #if cv2.waitKey(1) & 0xFF == ord('q'):
+            #break
 
     cap.release()
-    cv2.destroyAllWindows()
+    #cv2.destroyAllWindows()
 
 def write_img():
-    print "waiting to write images"
     while True:
         if not img_write_q.empty():
             frame = img_write_q.get()
