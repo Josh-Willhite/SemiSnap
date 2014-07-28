@@ -7,10 +7,12 @@ from time import strftime
 from Queue import Queue
 from collections import deque
 import threading
+from tweet_image import post_vehicle_image
 
 
 thresh_q = deque(maxlen=500)
 trigger_level = .25
+min_img_cap_time = 1.5
 
 img_write_q = Queue()
 
@@ -65,7 +67,7 @@ def snap():
         curr_threshold = curr_mode + trigger_level * curr_mode
 
 
-        if d > curr_threshold and len(thresh_q) > 50 and (curr_time - last_time) > .5:
+        if d > curr_threshold and len(thresh_q) > 50 and (curr_time - last_time) > min_img_cap_time:
             width = np.size(raw, 1)
             height = np.size(raw, 0)
             last_time = curr_time
@@ -73,12 +75,11 @@ def snap():
             cv2.putText(raw, strftime("%a, %d %b %Y %H:%M:%S"), (0, 20), cv2.FONT_HERSHEY_PLAIN, 1.5, text_color)
             cv2.imshow('movement', raw)
             img_write_q.put(raw)
-            print "TIME: " + str(last_time)
-            print "FRAME MEAN: " + str(d)
-            print "Current Threshold: "  + str(curr_threshold)
+            #print "TIME: " + str(last_time)
+            #print "FRAME MEAN: " + str(d)
+            #print "Current Threshold: "  + str(curr_threshold)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-        #frame_buffer.append(frame)
 
     cap.release()
     cv2.destroyAllWindows()
@@ -96,4 +97,7 @@ if __name__ == '__main__':
     cv_thread.start()
 
     write_thread = threading.Thread(target=write_img)
+    write_thread.start()
+
+    tweet_thread = threading.Thread(target=post_vehicle_image())
     write_thread.start()
