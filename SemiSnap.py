@@ -39,6 +39,10 @@ def diff(c, b, a):
 
 
 def getROI(frame):
+    ret,thresh2 = cv2.threshold(frame,20,255,cv2.THRESH_BINARY_INV)
+    moments = cv2.moments(frame)
+    print moments['m00']
+
     width = np.size(frame, 1)
     height = np.size(frame, 0)
 
@@ -48,11 +52,25 @@ def getROI(frame):
     x1 = width
     y1 = height/2
 
-    return frame[y0:y1, x0:x1]
+    #return frame[y0:y1, x0:x1]
 
+def set_camera(cap):
+    cap.set(cv2.cv.CV_CAP_PROP_CONTRAST, 97/255.0)
+    cap.set(cv2.cv.CV_CAP_PROP_BRIGHTNESS, 112/255.0)
+    cap.set(cv2.cv.CV_CAP_PROP_SATURATION, 255/255.0)
 
 def snap():
     cap = cv2.VideoCapture(0)
+    set_camera(cap)
+
+    #print str(cap.get(cv2.cv.CV_CAP_PROP_BRIGHTNESS))
+    #cap.set(11, 0)
+    print str(int(cap.get(cv2.cv.CV_CAP_PROP_BRIGHTNESS) * 255))
+
+    #time.sleep(2)
+
+    #cap.set(15, -8.0)
+
     raw = cv2.cvtColor(cap.read()[1], cv2.COLOR_BGR2GRAY)
     a = raw
     b = raw
@@ -65,26 +83,25 @@ def snap():
         b = a
         a = raw
 
-        d = diff(c,b,a)[1][0]
+        d = diff(c,b,a)
 
-        thresh_q.append(round(d, 2))
+        thresh_q.append(round(d[1][0], 2))
         curr_mode = get_threshold()
         curr_threshold = curr_mode + trigger_level * curr_mode
 
+        cv2.imshow('basic', raw)
 
-        if d > curr_threshold and len(thresh_q) > 50 and (curr_time - last_time) > min_img_cap_time:
-            width = np.size(raw, 1)
-            height = np.size(raw, 0)
+        if d[1][0] > curr_threshold and len(thresh_q) > 50 and (curr_time - last_time) > min_img_cap_time:
             last_time = curr_time
             text_color = (0, 0, 0)
             cv2.putText(raw, strftime("%a, %d %b %Y %H:%M:%S"), (0, 20), cv2.FONT_HERSHEY_PLAIN, 1.5, text_color)
-            cv2.imshow('movement', raw)
-            #img_write_q.put(raw)
-        #if cv2.waitKey(1) & 0xFF == ord('q'):
-            #break
+            cv2.imshow('movement', d[0])
+            img_write_q.put(raw)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
     cap.release()
-    #cv2.destroyAllWindows()
+    cv2.destroyAllWindows()
 
 def write_img():
     while True:
@@ -94,11 +111,10 @@ def write_img():
 
 
 if __name__ == '__main__':
-    cv_thread = threading.Thread(target=snap)
-    cv_thread.start()
+    cv_thread = threading.Thread(target=snap).start()
+    write_thread = threading.Thread(target=write_img).start()
 
-    write_thread = threading.Thread(target=write_img)
-    write_thread.start()
-
+'''
     tweet_thread = threading.Thread(target=post_vehicle_image())
     write_thread.start()
+'''
