@@ -38,7 +38,9 @@ def diff(c, b, a):
     return background_removed, cv2.mean(background_removed)
 
 
-def getROI(frame):
+def getROI(frame, diff_frame):
+    #TODO just grab area of movement for analysis
+
     ret,thresh2 = cv2.threshold(frame,20,255,cv2.THRESH_BINARY_INV)
     moments = cv2.moments(frame)
     print moments['m00']
@@ -63,14 +65,6 @@ def snap():
     cap = cv2.VideoCapture(0)
     set_camera(cap)
 
-    #print str(cap.get(cv2.cv.CV_CAP_PROP_BRIGHTNESS))
-    #cap.set(11, 0)
-    print str(int(cap.get(cv2.cv.CV_CAP_PROP_BRIGHTNESS) * 255))
-
-    #time.sleep(2)
-
-    #cap.set(15, -8.0)
-
     raw = cv2.cvtColor(cap.read()[1], cv2.COLOR_BGR2GRAY)
     a = raw
     b = raw
@@ -85,18 +79,24 @@ def snap():
 
         d = diff(c,b,a)
 
-        thresh_q.append(round(d[1][0], 2))
-        curr_mode = get_threshold()
+        try:
+            curr_mode = get_threshold()
+        except:
+            curr_mode = .5
+
         curr_threshold = curr_mode + trigger_level * curr_mode
 
         cv2.imshow('basic', raw)
 
-        if d[1][0] > curr_threshold and len(thresh_q) > 50 and (curr_time - last_time) > min_img_cap_time:
+        if d[1][0] > curr_threshold and len(thresh_q) > 100 and (curr_time - last_time) > min_img_cap_time:
             last_time = curr_time
             text_color = (0, 0, 0)
             cv2.putText(raw, strftime("%a, %d %b %Y %H:%M:%S"), (0, 20), cv2.FONT_HERSHEY_PLAIN, 1.5, text_color)
             cv2.imshow('movement', d[0])
-            img_write_q.put(raw)
+            #img_write_q.put(raw)
+        else:
+            thresh_q.append(round(d[1][0], 2))
+
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
@@ -112,7 +112,7 @@ def write_img():
 
 if __name__ == '__main__':
     cv_thread = threading.Thread(target=snap).start()
-    write_thread = threading.Thread(target=write_img).start()
+    #write_thread = threading.Thread(target=write_img).start()
 
 '''
     tweet_thread = threading.Thread(target=post_vehicle_image())
